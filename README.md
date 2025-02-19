@@ -5,6 +5,7 @@
 Конвертор подлючается к wifi моей домашней сети.
 
 Настройки для сенсоров находятся в configuration.yaml. Если есть вопросы - задавайте.
+Нужно поменять 192.168.1.155 8899 на свои данные.
 
 ![image](https://github.com/user-attachments/assets/b8c5c8e8-4601-4a37-93aa-6c7da8112912)
 ![image](https://github.com/user-attachments/assets/1fc5d40b-cff6-4606-9960-0da09f42f841)
