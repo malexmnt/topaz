@@ -19,7 +19,6 @@ command_line:
         - energy
         - params
 
-
 template:
   - sensor:
       - name: "ТОПАЗ 303 Всего"
