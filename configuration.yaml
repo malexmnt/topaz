@@ -1,0 +1,213 @@
+
+#извлекаем данные из счетчкиа ТОПАЗ 303
+command_line:
+  - sensor:
+      name: ТОПАЗ 303
+      unique_id: energy.topaz_303
+      command_timeout: 10
+      scan_interval: 5
+      command: >
+        /bin/bash -c '
+        RESP1=$( { printf "\x01\x00\x00\x00\x01\x80\x06\x14\x01\xe9\x0e"; sleep 1; } | nc 192.168.1.155 8899 | hexdump -v -e "/1 \"%02x \"" | xargs );
+        RESP2=$( { printf "\x01\x00\x00\x00\x02\x80\x06\x15\x04\x00\x64\x22"; sleep 1; } | nc 192.168.1.155 8899 | hexdump -v -e "/1 \"%02x \"" | xargs );
+        OUT1=$( [[ "$RESP1" == "01 00 00 00 15 00 06 14 01"* ]] && echo "$RESP1" || echo "none" );
+        OUT2=$( [[ "$RESP2" == "01 00 00 00 1e 00 06 15"* ]] && echo "$RESP2" || echo "none" );
+        echo "{\"energy\": \"$OUT1\", \"params\": \"$OUT2\"}"
+        '
+      value_template: "{{ value_json }}"
+      json_attributes:
+        - energy
+        - params
+
+
+template:
+  - sensor:
+      - name: "ТОПАЗ 303 Всего"
+        unique_id: energy.topaz_303_total
+        unit_of_measurement: "kWh"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'energy').split() %}
+          {% set n_bcd = response[9:13] | reverse | join('') | int %}
+          {% set n = (n_bcd / 100) %}
+          {{ n }}
+
+        state_class: "total_increasing"
+        device_class: "energy"
+
+      - name: "ТОПАЗ 303 День"
+        unique_id: energy.topaz_303_day
+        unit_of_measurement: "kWh"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'energy').split() %}
+          {% set n_bcd = response[13:17] | reverse | join('') | int %}
+          {% set n = (n_bcd / 100) %}
+          {{ n }}
+        state_class: "total_increasing"
+        device_class: "energy"
+
+      - name: "ТОПАЗ 303 Ночь"
+        unique_id: energy.topaz_303_night
+        unit_of_measurement: "kWh"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'energy').split() %}
+          {% set n_bcd = response[17:21] | reverse | join('') | int %}
+          {% set n = (n_bcd / 100) %}
+          {{ n }}
+        state_class: "total_increasing"
+        device_class: "energy"
+
+        #фаза1 мощность P
+      - name: "ТОПАЗ 303 L1 P"
+        unique_id: energy.topaz_303_l1_p
+        unit_of_measurement: "W"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[8:11] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "power"
+
+        #фаза1 сила тока I
+      - name: "ТОПАЗ 303 L1 I"
+        unique_id: energy.topaz_303_l1_i
+        unit_of_measurement: "A"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[11:14] | reverse | join('') | int %}
+          {% set n = (n_bcd / 1000) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "current"
+
+        #фаза1 напряжение U
+      - name: "ТОПАЗ 303 L1 U"
+        unique_id: energy.topaz_303_l1_u
+        unit_of_measurement: "V"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[14:16] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "voltage"
+
+        #фаза1 сдвиг фазы fi
+      - name: "ТОПАЗ 303 L1 fi"
+        unique_id: energy.topaz_303_l1_fi
+        unit_of_measurement: "φ"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[16:18] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        #device_class: none
+
+        #фаза1 реактивная мощность Q
+        #      - name: "ТОПАЗ 303 L1 Q"
+        #        unique_id: energy.topaz_303_l1_q
+        #        unit_of_measurement: "var"
+        #        state: >
+        #          {% set response = states('sensor.topaz_303_parametry_q').split() %}
+        #          {% set n_bcd = response[8:11] | reverse | join('') | int %}
+        #          {% set n = (n_bcd / 10) %}
+        #          {{ n }}
+        #        state_class: "measurement"
+        #        device_class: "reactive_power"
+
+        #фаза2 мощность P
+      - name: "ТОПАЗ 303 L2 P"
+        unique_id: energy.topaz_303_l2_p
+        unit_of_measurement: "W"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[18:21] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "power"
+
+        #фаза2 сила тока I
+      - name: "ТОПАЗ 303 L2 I"
+        unique_id: energy.topaz_303_l2_i
+        unit_of_measurement: "A"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[21:24] | reverse | join('') | int %}
+          {% set n = (n_bcd / 1000) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "current"
+
+        #фаза2 напряжение U
+      - name: "ТОПАЗ 303 L2 U"
+        unique_id: energy.topaz_303_l2_u
+        unit_of_measurement: "V"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[24:26] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "voltage"
+
+        #фаза2 сдвиг фазы fi
+      - name: "ТОПАЗ 303 L2 fi"
+        unique_id: energy.topaz_303_l2_fi
+        unit_of_measurement: "φ"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[26:28] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        #device_class: none
+
+        #фаза3 мощность P
+      - name: "ТОПАЗ 303 L3 P"
+        unique_id: energy.topaz_303_l3_p
+        unit_of_measurement: "W"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[28:31] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "power"
+
+        #фаза3 сила тока I
+      - name: "ТОПАЗ 303 L3 I"
+        unique_id: energy.topaz_303_l3_i
+        unit_of_measurement: "A"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[31:34] | reverse | join('') | int %}
+          {% set n = (n_bcd / 1000) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "current"
+
+        #фаза3 напряжение U
+      - name: "ТОПАЗ 303 L3 U"
+        unique_id: energy.topaz_303_l3_u
+        unit_of_measurement: "V"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[34:36] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        device_class: "voltage"
+
+        #фаза3 сдвиг фазы fi
+      - name: "ТОПАЗ 303 L3 fi"
+        unique_id: energy.topaz_303_l3_fi
+        unit_of_measurement: "φ"
+        state: >
+          {% set response = state_attr('sensor.topaz_303', 'params').split() %}
+          {% set n_bcd = response[36:38] | reverse | join('') | int %}
+          {% set n = (n_bcd / 10) %}
+          {{ n }}
+        state_class: "measurement"
+        #device_class: none
